@@ -40,11 +40,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase.auth])
 
   const signInWithGoogle = async () => {
+    const redirectUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         scopes: 'openid email profile https://www.googleapis.com/auth/calendar',
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: `${redirectUrl}/auth/callback`
       }
     })
   }
