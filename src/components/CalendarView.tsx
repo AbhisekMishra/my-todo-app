@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Calendar from 'react-calendar'
 import { Todo } from '@/types/database'
-import { format, isSameDay, startOfDay } from 'date-fns'
+import { format, startOfDay } from 'date-fns'
 import { Clock, AlertCircle } from 'lucide-react'
 import 'react-calendar/dist/Calendar.css'
 
@@ -176,6 +176,7 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
 
                   {todo.image_url && (
                     <div className="mt-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={todo.image_url}
                         alt="Todo attachment"

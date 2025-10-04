@@ -100,9 +100,6 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
   const isSpeechSupported = typeof window !== 'undefined' &&
     ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)
 
-  const isCameraSupported = typeof window !== 'undefined' &&
-    'mediaDevices' in navigator && 'getUserMedia' in navigator.mediaDevices
-
   return (
     <div className="flex space-x-4">
       {/* Voice Recording Button */}
@@ -147,6 +144,7 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
           fontFamily: 'Google Sans, sans-serif'
         }}
       >
+        {/* eslint-disable-next-line jsx-a11y/alt-text */}
         <Image className="h-4 w-4" />
         <span>Gallery</span>
       </button>
@@ -159,6 +157,7 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
         capture="environment"
         onChange={handleFileSelect}
         style={{ display: 'none' }}
+        aria-label="Camera input"
       />
 
       <input

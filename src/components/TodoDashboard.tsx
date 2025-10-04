@@ -26,7 +26,6 @@ export function TodoDashboard() {
     category: 'normal',
     severity: 'medium'
   })
-  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
   const [severityFilter, setSeverityFilter] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'severity' | 'due_date' | 'created_at'>('due_date')
@@ -59,9 +58,6 @@ export function TodoDashboard() {
       // Convert blob URL to file for upload
       const response = await fetch(imageUrl)
       const blob = await response.blob()
-
-      // Create a file-like object for upload
-      const file = new File([blob], 'image.jpg', { type: blob.type })
 
       // Upload to Supabase if user is logged in
       if (user) {
@@ -376,6 +372,7 @@ export function TodoDashboard() {
                     Attached Image
                   </label>
                   <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={newTodo.image_url}
                       alt="Selected attachment"
@@ -450,6 +447,7 @@ export function TodoDashboard() {
                       )}
                       {todo.image_url && (
                         <div className="ml-7 mb-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={todo.image_url}
                             alt="Todo attachment"
