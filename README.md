@@ -1,8 +1,57 @@
+# Todo Web App
+
+A modern, feature-rich todo application built with Next.js 15 and Supabase. This application offers voice-enabled task creation, calendar integration, and intelligent todo categorization with a clean, responsive interface.
+
+## Features
+
+- **Voice-Enabled Task Creation**: Use Web Speech API to create todos by speaking
+- **Supabase Authentication**: Secure user authentication and data isolation
+- **Todo Categories & Severity**: Organize tasks with categories (normal, reminder, custom) and priority levels
+- **File Attachments**: Add images and voice notes to your todos
+- **Calendar Integration**: Google Calendar event synchronization
+- **Dark/Light Theme**: Toggle between themes with persistent preferences
+- **Real-time Updates**: Live synchronization of todo changes
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+
+## Tech Stack
+
+- **Frontend**: Next.js 15, React 19, TypeScript
+- **Styling**: Tailwind CSS 4
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Icons**: Lucide React
+- **Date Handling**: date-fns
+- **Calendar**: react-big-calendar
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Prerequisites
+
+1. Node.js 18+ and npm
+2. Supabase account and project
+3. Environment variables configured (see below)
+
+## Environment Setup
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+## Database Setup
+
+Run the SQL schema provided in `supabase-schema.sql` in your Supabase SQL editor to set up the required tables, policies, and storage buckets.
 
 ## Getting Started
 
-First, run the development server:
+First, install dependencies:
+
+```bash
+npm install
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev

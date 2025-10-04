@@ -59,4 +59,54 @@ export class TodoAPI {
   static async toggleComplete(id: string, completed: boolean): Promise<Todo> {
     return this.updateTodo(id, { completed })
   }
+
+  // Calendar sync methods
+  static async syncTodoToCalendar(todoId: string, action: 'create' | 'update' | 'delete'): Promise<any> {
+    return this.request<any>('/calendar/sync', {
+      method: 'POST',
+      body: JSON.stringify({ todoId, action }),
+    })
+  }
+
+  static async createTodoWithCalendarSync(todo: Omit<TodoInsert, 'user_id'>): Promise<Todo> {
+    const createdTodo = await this.createTodo(todo)
+
+    // Auto-sync reminder todos to calendar
+    if (createdTodo.category === 'reminder') {
+      try {
+        await this.syncTodoToCalendar(createdTodo.id, 'create')
+      } catch (error) {
+        console.warn('Failed to sync todo to calendar:', error)
+      }
+    }
+
+    return createdTodo
+  }
+
+  static async updateTodoWithCalendarSync(id: string, updates: Partial<Todo>): Promise<Todo> {
+    const updatedTodo = await this.updateTodo(id, updates)
+
+    // Sync reminder todos to calendar
+    if (updatedTodo.category === 'reminder' && updatedTodo.google_calendar_event_id) {
+      try {
+        await this.syncTodoToCalendar(updatedTodo.id, 'update')
+      } catch (error) {
+        console.warn('Failed to update calendar event:', error)
+      }
+    }
+
+    return updatedTodo
+  }
+
+  static async deleteTodoWithCalendarSync(id: string): Promise<void> {
+    // First try to delete from calendar
+    try {
+      await this.syncTodoToCalendar(id, 'delete')
+    } catch (error) {
+      console.warn('Failed to delete calendar event:', error)
+    }
+
+    // Then delete the todo
+    return this.deleteTodo(id)
+  }
 }
