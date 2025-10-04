@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Set up Google Calendar access
-    const hasAccess = await googleCalendarService.getAccessTokenFromSupabase(user.id)
+    const hasAccess = await googleCalendarService.getAccessTokenFromSupabase()
     if (!hasAccess) {
       return NextResponse.json({ error: 'Google Calendar access not available' }, { status: 403 })
     }
