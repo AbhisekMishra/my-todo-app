@@ -77,12 +77,10 @@ export function TodoDashboard() {
         setNewTodo(prev => ({ ...prev, image_url: imageUrl }))
       }
 
-      setSelectedImage(imageUrl)
       setShowAddForm(true)
     } catch (error) {
       console.error('Error handling image:', error)
       // Fallback to just using the local URL
-      setSelectedImage(imageUrl)
       setNewTodo(prev => ({ ...prev, image_url: imageUrl }))
       setShowAddForm(true)
     }
@@ -95,9 +93,9 @@ export function TodoDashboard() {
       // Process todo with AI agents for categorization and enhancement
       const agentResponse = await agentService.processTodo({
         title: newTodo.title,
-        description: newTodo.description,
+        description: newTodo.description || undefined,
         due_date: newTodo.due_date,
-        due_time: newTodo.due_time
+        due_time: newTodo.due_time || undefined
       })
 
       // Apply agent suggestions
@@ -110,13 +108,13 @@ export function TodoDashboard() {
       }
 
       const data = await TodoAPI.createTodoWithCalendarSync({
-        title: enhancedTodo.title,
-        description: enhancedTodo.description,
-        due_date: enhancedTodo.due_date,
-        due_time: enhancedTodo.due_time,
+        title: enhancedTodo.title!,
+        description: enhancedTodo.description || null,
+        due_date: enhancedTodo.due_date || format(new Date(), 'yyyy-MM-dd'),
+        due_time: enhancedTodo.due_time || null,
         category: enhancedTodo.category || 'normal',
         severity: enhancedTodo.severity || 'medium',
-        image_url: newTodo.image_url
+        image_url: newTodo.image_url || null
       })
 
       setTodos([...todos, data])

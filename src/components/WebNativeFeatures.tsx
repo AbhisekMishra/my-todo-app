@@ -11,14 +11,16 @@ interface WebNativeFeaturesProps {
 export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFeaturesProps) {
   const [isListening, setIsListening] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
-  const recognitionRef = useRef<SpeechRecognition | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // Initialize Speech Recognition
   const initSpeechRecognition = useCallback(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognitionAPI = (window as typeof window & { webkitSpeechRecognition: typeof SpeechRecognition }).webkitSpeechRecognition || SpeechRecognition
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const SpeechRecognitionAPI = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
       const recognition = new SpeechRecognitionAPI()
 
       recognition.continuous = false
@@ -30,12 +32,14 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
         setIsRecording(true)
       }
 
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript
         onVoiceInput(transcript)
       }
 
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error)
         setIsListening(false)
         setIsRecording(false)

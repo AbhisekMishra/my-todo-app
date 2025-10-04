@@ -23,8 +23,10 @@ export interface CalendarEvent {
 }
 
 class GoogleCalendarService {
-  private oauth2Client: ReturnType<typeof google.auth.OAuth2.prototype.constructor>
-  private calendar: ReturnType<typeof google.calendar>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private oauth2Client: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private calendar: any
 
   constructor() {
     this.oauth2Client = new google.auth.OAuth2(
@@ -49,7 +51,7 @@ class GoogleCalendarService {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.provider_token) {
-        await this.setAccessToken(session.provider_token, session.provider_refresh_token)
+        await this.setAccessToken(session.provider_token, session.provider_refresh_token || undefined)
         return true
       }
       return false
