@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Mic, Camera, Image, MicOff } from 'lucide-react'
+import { Mic, Camera, Image as ImageIcon, MicOff } from 'lucide-react'
 
 interface WebNativeFeaturesProps {
   onVoiceInput: (text: string) => void
   onImageSelected: (imageUrl: string) => void
+  onError?: (message: string) => void
 }
 
-export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFeaturesProps) {
+export function WebNativeFeatures({ onVoiceInput, onImageSelected, onError }: WebNativeFeaturesProps) {
   const [isListening, setIsListening] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,7 +63,7 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
     }
 
     if (!recognitionRef.current) {
-      alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.')
+      onError?.('Speech recognition is not supported in this browser. Please use Chrome or Edge.')
       return
     }
 
@@ -105,12 +106,12 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
     ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)
 
   return (
-    <div className="flex space-x-4">
+    <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
       {/* Voice Recording Button */}
       <button
         onClick={toggleVoiceRecording}
         disabled={!isSpeechSupported}
-        className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+        className={`flex items-center justify-center sm:justify-start space-x-2 px-4 py-2 rounded-lg ${
           isRecording ? 'animate-pulse' : ''
         } ${!isSpeechSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{
@@ -119,38 +120,40 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
           fontFamily: 'Google Sans, sans-serif'
         }}
         title={!isSpeechSupported ? 'Speech recognition not supported in this browser' : ''}
+        aria-label={isRecording ? 'Stop voice recording' : 'Start voice recording'}
       >
         {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-        <span>{isRecording ? 'Stop Recording' : 'Voice Input'}</span>
+        <span className="text-sm sm:text-base">{isRecording ? 'Stop Recording' : 'Voice Input'}</span>
       </button>
 
       {/* Camera Capture Button */}
       <button
         onClick={handleCameraCapture}
-        className="flex items-center space-x-2 px-4 py-2 rounded-lg"
+        className="flex items-center justify-center sm:justify-start space-x-2 px-4 py-2 rounded-lg"
         style={{
           backgroundColor: 'var(--info)',
           color: 'white',
           fontFamily: 'Google Sans, sans-serif'
         }}
+        aria-label="Take photo"
       >
         <Camera className="h-4 w-4" />
-        <span>Take Photo</span>
+        <span className="text-sm sm:text-base">Take Photo</span>
       </button>
 
       {/* Gallery Button */}
       <button
         onClick={handleGallerySelect}
-        className="flex items-center space-x-2 px-4 py-2 rounded-lg"
+        className="flex items-center justify-center sm:justify-start space-x-2 px-4 py-2 rounded-lg"
         style={{
           backgroundColor: 'var(--warning)',
           color: 'white',
           fontFamily: 'Google Sans, sans-serif'
         }}
+        aria-label="Select from gallery"
       >
-        {/* eslint-disable-next-line jsx-a11y/alt-text */}
-        <Image className="h-4 w-4" />
-        <span>Gallery</span>
+        <ImageIcon className="h-4 w-4" aria-hidden="true" />
+        <span className="text-sm sm:text-base">Gallery</span>
       </button>
 
       {/* Hidden file inputs */}

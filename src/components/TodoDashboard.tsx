@@ -6,16 +6,19 @@ import { TodoAPI } from '@/lib/api'
 import { Todo, TodoInsert } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/fileUpload'
 import { format } from 'date-fns'
-import { Calendar, Plus, LogOut, Clock, List, CalendarDays } from 'lucide-react'
+import { Calendar, Plus, LogOut, Clock, List, CalendarDays, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react'
 import { WebNativeFeatures } from './WebNativeFeatures'
 import { ThemeToggle } from './ThemeToggle'
 import { CalendarView } from './CalendarView'
 import { NotificationCenter } from './NotificationCenter'
 import { agentService } from '@/lib/agentService'
 import { SeverityFilter } from './SeverityFilter'
+import { ToastContainer } from './Toast'
+import { useToast } from '@/hooks/useToast'
 
 export function TodoDashboard() {
   const { user, signOut } = useAuth()
+  const { toasts, removeToast, success, error } = useToast()
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -30,6 +33,8 @@ export function TodoDashboard() {
   const [severityFilter, setSeverityFilter] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'severity' | 'due_date' | 'created_at'>('due_date')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const fetchTodos = useCallback(async () => {
     try {
@@ -86,13 +91,30 @@ export function TodoDashboard() {
     }
   }
 
-  const addTodo = async () => {
-    if (!newTodo.title || !user) return
+  const validateForm = (): boolean => {
+    const errors: { [key: string]: string } = {}
 
+    if (!newTodo.title?.trim()) {
+      errors.title = 'Title is required'
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const addTodo = async () => {
+    if (!user) return
+
+    if (!validateForm()) {
+      error('Please fill in all required fields')
+      return
+    }
+
+    setIsSubmitting(true)
     try {
       // Process todo with AI agents for categorization and enhancement
       const agentResponse = await agentService.processTodo({
-        title: newTodo.title,
+        title: newTodo.title!,
         description: newTodo.description || undefined,
         due_date: newTodo.due_date,
         due_time: newTodo.due_time || undefined
@@ -125,10 +147,14 @@ export function TodoDashboard() {
         category: 'normal',
         severity: 'medium'
       })
+      setFormErrors({})
       setShowAddForm(false)
-    } catch (error) {
-      console.error('Error adding todo:', error)
-      alert('Failed to add todo: ' + error)
+      success('Todo added successfully!')
+    } catch (err) {
+      console.error('Error adding todo:', err)
+      error('Failed to add todo. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -138,19 +164,30 @@ export function TodoDashboard() {
       setTodos(todos.map(todo =>
         todo.id === id ? updatedTodo : todo
       ))
-    } catch (error) {
-      console.error('Error updating todo:', error)
-      alert('Failed to update todo: ' + error)
+      success(completed ? 'Todo marked as incomplete' : 'Todo completed!')
+    } catch (err) {
+      console.error('Error updating todo:', err)
+      error('Failed to update todo. Please try again.')
+    }
+  }
+
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
+      case 'low': return <CheckCircle className="h-3 w-3" />
+      case 'medium': return <Clock className="h-3 w-3" />
+      case 'high': return <AlertTriangle className="h-3 w-3" />
+      case 'critical': return <AlertCircle className="h-3 w-3" />
+      default: return null
     }
   }
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'low': return 'bg-green-100 text-green-800 border-green-200'
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200'
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200'
+      case 'low': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300 dark:border-green-700'
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:border-yellow-700'
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900 dark:text-orange-300 dark:border-orange-700'
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300 dark:border-red-700'
+      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600'
     }
   }
 
@@ -195,29 +232,47 @@ export function TodoDashboard() {
     setSortOrder(order)
   }
 
+  // Add keyboard support for closing form with Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showAddForm) {
+        setShowAddForm(false)
+        setFormErrors({})
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [showAddForm])
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading todos...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: 'var(--primary)' }}></div>
+          <div className="text-xl" style={{ fontFamily: 'Google Sans, sans-serif' }}>Loading todos...</div>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
       {/* Header */}
       <header className="border-b" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-4 gap-4">
             <div className="flex items-center space-x-4">
-              <Calendar className="h-8 w-8" style={{ color: 'var(--primary)' }} />
-              <h1 className="text-2xl font-bold" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
+              <Calendar className="h-6 w-6 sm:h-8 sm:w-8" style={{ color: 'var(--primary)' }} />
+              <h1 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                 Todo Dashboard
               </h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm" style={{ color: 'var(--secondary-foreground)' }}>
-                Welcome, {user?.email}
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <span className="text-xs sm:text-sm hidden sm:inline" style={{ color: 'var(--secondary-foreground)' }}>
+                {user?.email?.split('@')[0]}
               </span>
               <NotificationCenter />
               <ThemeToggle />
@@ -225,9 +280,10 @@ export function TodoDashboard() {
                 onClick={signOut}
                 className="secondary flex items-center space-x-2 px-3 py-2 text-sm rounded-lg"
                 style={{ color: 'var(--foreground)' }}
+                aria-label="Sign out"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Sign Out</span>
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           </div>
@@ -239,23 +295,31 @@ export function TodoDashboard() {
         {/* View Toggle and Action Buttons */}
         <div className="flex flex-wrap justify-between items-center gap-4 mb-8">
           {/* View Toggle */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex rounded-lg p-1" style={{ backgroundColor: 'var(--secondary)' }}>
             <button
               onClick={() => setViewMode('list')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'list'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
+              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: viewMode === 'list' ? 'var(--card)' : 'transparent',
+                color: viewMode === 'list' ? 'var(--foreground)' : 'var(--secondary-foreground)',
+                boxShadow: viewMode === 'list' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+              }}
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
             >
               <List className="h-4 w-4" />
               <span>List</span>
             </button>
             <button
               onClick={() => setViewMode('calendar')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${viewMode === 'calendar'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-                }`}
+              className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+              style={{
+                backgroundColor: viewMode === 'calendar' ? 'var(--card)' : 'transparent',
+                color: viewMode === 'calendar' ? 'var(--foreground)' : 'var(--secondary-foreground)',
+                boxShadow: viewMode === 'calendar' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none'
+              }}
+              aria-label="Calendar view"
+              aria-pressed={viewMode === 'calendar'}
             >
               <CalendarDays className="h-4 w-4" />
               <span>Calendar</span>
@@ -280,6 +344,7 @@ export function TodoDashboard() {
             <WebNativeFeatures
               onVoiceInput={handleVoiceInput}
               onImageSelected={handleImageSelected}
+              onError={error}
             />
           </div>
         </div>
@@ -300,62 +365,81 @@ export function TodoDashboard() {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
-                  Title
+                <label htmlFor="todo-title" className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
+                  Title <span className="text-red-500">*</span>
                 </label>
                 <input
+                  id="todo-title"
                   type="text"
                   value={newTodo.title || ''}
-                  onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+                  onChange={(e) => {
+                    setNewTodo({ ...newTodo, title: e.target.value })
+                    if (formErrors.title) {
+                      setFormErrors(prev => ({ ...prev, title: '' }))
+                    }
+                  }}
                   className="w-full"
                   placeholder="Enter todo title"
+                  aria-required="true"
+                  aria-invalid={!!formErrors.title}
+                  aria-describedby={formErrors.title ? 'title-error' : undefined}
+                  autoFocus
                 />
+                {formErrors.title && (
+                  <p id="title-error" className="text-sm mt-1" style={{ color: 'var(--destructive)' }}>
+                    {formErrors.title}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="todo-description" className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                   Description
                 </label>
                 <textarea
+                  id="todo-description"
                   value={newTodo.description || ''}
                   onChange={(e) => setNewTodo({ ...newTodo, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full"
                   rows={3}
                   placeholder="Enter description (optional)"
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="todo-due-date" className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                     Due Date
                   </label>
                   <input
+                    id="todo-due-date"
                     type="date"
                     value={newTodo.due_date || ''}
                     onChange={(e) => setNewTodo({ ...newTodo, due_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="todo-category" className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                     Category
                   </label>
                   <select
+                    id="todo-category"
                     value={newTodo.category || 'normal'}
                     onChange={(e) => setNewTodo({ ...newTodo, category: e.target.value as 'normal' | 'reminder' | 'custom' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full"
                   >
                     <option value="normal">Normal Task</option>
                     <option value="reminder">Task with Reminder</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="todo-severity" className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                     Severity
                   </label>
                   <select
+                    id="todo-severity"
                     value={newTodo.severity || 'medium'}
                     onChange={(e) => setNewTodo({ ...newTodo, severity: e.target.value as 'low' | 'medium' | 'high' | 'critical' })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -366,36 +450,53 @@ export function TodoDashboard() {
               </div>
               {newTodo.image_url && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                     Attached Image
                   </label>
-                  <div className="relative">
+                  <div className="relative inline-block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={newTodo.image_url}
                       alt="Selected attachment"
-                      className="max-w-xs max-h-48 rounded-lg border border-gray-200"
+                      className="max-w-xs max-h-48 rounded-lg"
+                      style={{ border: '1px solid var(--border)' }}
                     />
                     <button
                       type="button"
                       onClick={() => setNewTodo(prev => ({ ...prev, image_url: undefined }))}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                      className="absolute -top-2 -right-2 rounded-full w-10 h-10 flex items-center justify-center shadow-lg transition-transform hover:scale-110"
+                      style={{
+                        backgroundColor: 'var(--destructive)',
+                        color: 'var(--destructive-foreground)'
+                      }}
+                      aria-label="Remove image"
                     >
                       ×
                     </button>
                   </div>
                 </div>
               )}
-              <div className="flex space-x-4">
+              <div className="flex gap-4">
                 <button
                   onClick={addTodo}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                  disabled={isSubmitting}
+                  className="px-6 py-2 rounded-lg transition-opacity disabled:opacity-50"
+                  style={{
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-foreground)',
+                    fontFamily: 'Google Sans, sans-serif'
+                  }}
                 >
-                  Add Todo
+                  {isSubmitting ? 'Adding...' : 'Add Todo'}
                 </button>
                 <button
-                  onClick={() => setShowAddForm(false)}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                  onClick={() => {
+                    setShowAddForm(false)
+                    setFormErrors({})
+                  }}
+                  disabled={isSubmitting}
+                  className="secondary px-6 py-2 rounded-lg disabled:opacity-50"
+                  style={{ fontFamily: 'Google Sans, sans-serif' }}
                 >
                   Cancel
                 </button>
@@ -414,17 +515,38 @@ export function TodoDashboard() {
             }}
           />
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4" role="list" aria-label="Todo items">
             {filteredAndSortedTodos.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 text-lg">No todos yet. Add your first todo!</p>
+              <div className="card p-12 text-center">
+                <Calendar className="h-16 w-16 mx-auto mb-4" style={{ color: 'var(--secondary-foreground)', opacity: 0.5 }} />
+                <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
+                  No todos yet
+                </h3>
+                <p className="mb-4" style={{ color: 'var(--secondary-foreground)' }}>
+                  Get started by adding your first task
+                </p>
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg"
+                  style={{
+                    backgroundColor: 'var(--primary)',
+                    color: 'var(--primary-foreground)',
+                    fontFamily: 'Google Sans, sans-serif'
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Todo</span>
+                </button>
               </div>
             ) : (
               filteredAndSortedTodos.map((todo) => (
                 <div
                   key={todo.id}
-                  className={`bg-white rounded-lg shadow p-4 border-l-4 ${todo.completed ? 'opacity-60' : ''
-                    }`}
+                  role="listitem"
+                  className={`card p-4 border-l-4 transition-opacity ${todo.completed ? 'opacity-60' : ''}`}
+                  style={{
+                    borderLeftColor: todo.severity === 'critical' ? '#dc2626' : todo.severity === 'high' ? '#ea580c' : todo.severity === 'medium' ? '#ca8a04' : '#16a34a'
+                  }}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -433,39 +555,44 @@ export function TodoDashboard() {
                           type="checkbox"
                           checked={todo.completed}
                           onChange={() => toggleComplete(todo.id, todo.completed)}
-                          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                          className="h-5 w-5 rounded transition-colors"
+                          style={{
+                            accentColor: 'var(--primary)'
+                          }}
+                          aria-label={`Mark "${todo.title}" as ${todo.completed ? 'incomplete' : 'complete'}`}
                         />
-                        <h3 className={`text-lg font-medium ${todo.completed ? 'line-through text-gray-500' : 'text-gray-900'
-                          }`}>
+                        <h3 className={`text-lg font-medium ${todo.completed ? 'line-through' : ''}`} style={{ color: todo.completed ? 'var(--secondary-foreground)' : 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
                           {todo.title}
                         </h3>
                       </div>
                       {todo.description && (
-                        <p className="text-gray-600 mb-2 ml-7">{todo.description}</p>
+                        <p className="mb-2 ml-8" style={{ color: 'var(--secondary-foreground)' }}>{todo.description}</p>
                       )}
                       {todo.image_url && (
-                        <div className="ml-7 mb-2">
+                        <div className="ml-8 mb-2">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={todo.image_url}
                             alt="Todo attachment"
-                            className="max-w-xs max-h-48 rounded-lg border border-gray-200"
+                            className="max-w-xs max-h-48 rounded-lg"
+                            style={{ border: '1px solid var(--border)' }}
                           />
                         </div>
                       )}
-                      <div className="flex items-center space-x-4 ml-7">
-                        <div className="flex items-center space-x-1 text-sm text-gray-500">
+                      <div className="flex items-center gap-4 ml-8 flex-wrap">
+                        <div className="flex items-center space-x-1 text-sm" style={{ color: 'var(--secondary-foreground)' }}>
                           <Clock className="h-4 w-4" />
                           <span>{format(new Date(todo.due_date), 'MMM d, yyyy')}</span>
                           {todo.due_time && <span>at {todo.due_time}</span>}
                         </div>
-                        <span className="text-sm text-gray-500 capitalize">
+                        <span className="text-sm capitalize" style={{ color: 'var(--secondary-foreground)' }}>
                           {todo.category}
                         </span>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded-full border ${getSeverityColor(todo.severity)}`}>
-                      {todo.severity}
+                    <span className={`px-3 py-1 text-xs rounded-full border flex items-center gap-1 ${getSeverityColor(todo.severity)}`}>
+                      {getSeverityIcon(todo.severity)}
+                      <span className="font-medium">{todo.severity}</span>
                     </span>
                   </div>
                 </div>
