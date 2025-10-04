@@ -20,7 +20,7 @@ export function SeverityFilter({ onFilterChange, onSortChange }: SeverityFilterP
     { value: 'low', label: 'Low', icon: CheckCircle, color: 'text-green-600 bg-green-50 border-green-200' }
   ]
 
-  const sortOptions = [
+  const sortOptions: { value: 'severity' | 'due_date' | 'created_at', label: string }[] = [
     { value: 'severity', label: 'Severity' },
     { value: 'due_date', label: 'Due Date' },
     { value: 'created_at', label: 'Created' }
@@ -89,7 +89,7 @@ export function SeverityFilter({ onFilterChange, onSortChange }: SeverityFilterP
           {sortOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => handleSortChange(option.value as any)}
+              onClick={() => handleSortChange(option.value)}
               className={`flex items-center space-x-1 px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 sortBy === option.value
                   ? 'bg-indigo-100 text-indigo-700'

@@ -11,15 +11,15 @@ interface WebNativeFeaturesProps {
 export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFeaturesProps) {
   const [isListening, setIsListening] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // Initialize Speech Recognition
   const initSpeechRecognition = useCallback(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
-      const recognition = new SpeechRecognition()
+      const SpeechRecognitionAPI = (window as typeof window & { webkitSpeechRecognition: typeof SpeechRecognition }).webkitSpeechRecognition || SpeechRecognition
+      const recognition = new SpeechRecognitionAPI()
 
       recognition.continuous = false
       recognition.interimResults = false
@@ -30,12 +30,12 @@ export function WebNativeFeatures({ onVoiceInput, onImageSelected }: WebNativeFe
         setIsRecording(true)
       }
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         const transcript = event.results[0][0].transcript
         onVoiceInput(transcript)
       }
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error)
         setIsListening(false)
         setIsRecording(false)

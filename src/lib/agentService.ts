@@ -1,5 +1,5 @@
 import { createSupabaseClient } from './supabase'
-import { Todo, TodoAgent } from '@/types/database'
+import { TodoAgent } from '@/types/database'
 
 export interface AgentResponse {
   category: 'normal' | 'reminder' | 'custom'
@@ -138,9 +138,9 @@ class AgentService {
 
   // Normal task agent
   private executeNormalAgent(
-    todo: any,
-    analysis: any,
-    suggestions: any
+    todo: { title: string; description?: string; due_date?: string; due_time?: string },
+    analysis: { suggestedCategory: 'normal' | 'reminder' | 'custom'; suggestedSeverity: 'low' | 'medium' | 'high' | 'critical'; keywords: string[] },
+    suggestions: AgentResponse['suggestions']
   ): AgentResponse {
     // Suggest breakdown for complex tasks
     if (todo.title.length > 50 || (todo.description && todo.description.length > 100)) {
@@ -162,9 +162,9 @@ class AgentService {
 
   // Reminder agent
   private executeReminderAgent(
-    todo: any,
-    analysis: any,
-    suggestions: any
+    todo: { title: string; description?: string; due_date?: string; due_time?: string },
+    analysis: { suggestedCategory: 'normal' | 'reminder' | 'custom'; suggestedSeverity: 'low' | 'medium' | 'high' | 'critical'; keywords: string[] },
+    suggestions: AgentResponse['suggestions']
   ): AgentResponse {
     // Suggest due time if not provided
     if (!todo.due_time) {
@@ -194,9 +194,9 @@ class AgentService {
 
   // Custom agent (for future extensions)
   private executeCustomAgent(
-    todo: any,
-    analysis: any,
-    suggestions: any
+    todo: { title: string; description?: string; due_date?: string; due_time?: string },
+    analysis: { suggestedCategory: 'normal' | 'reminder' | 'custom'; suggestedSeverity: 'low' | 'medium' | 'high' | 'critical'; keywords: string[] },
+    suggestions: AgentResponse['suggestions']
   ): AgentResponse {
     return {
       category: 'custom',

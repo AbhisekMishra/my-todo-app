@@ -23,8 +23,8 @@ export interface CalendarEvent {
 }
 
 class GoogleCalendarService {
-  private oauth2Client: any
-  private calendar: any
+  private oauth2Client: ReturnType<typeof google.auth.OAuth2.prototype.constructor>
+  private calendar: ReturnType<typeof google.calendar>
 
   constructor() {
     this.oauth2Client = new google.auth.OAuth2(
@@ -43,7 +43,7 @@ class GoogleCalendarService {
     })
   }
 
-  async getAccessTokenFromSupabase(userId: string) {
+  async getAccessTokenFromSupabase() {
     const supabase = createSupabaseClient()
 
     try {
@@ -98,7 +98,7 @@ class GoogleCalendarService {
     }
   }
 
-  async getEvents(timeMin?: string, timeMax?: string): Promise<any[]> {
+  async getEvents(timeMin?: string, timeMax?: string): Promise<CalendarEvent[]> {
     try {
       const response = await this.calendar.events.list({
         calendarId: 'primary',

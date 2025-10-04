@@ -61,8 +61,8 @@ export class TodoAPI {
   }
 
   // Calendar sync methods
-  static async syncTodoToCalendar(todoId: string, action: 'create' | 'update' | 'delete'): Promise<any> {
-    return this.request<any>('/calendar/sync', {
+  static async syncTodoToCalendar(todoId: string, action: 'create' | 'update' | 'delete'): Promise<{ success: boolean; eventId?: string }> {
+    return this.request<{ success: boolean; eventId?: string }>('/calendar/sync', {
       method: 'POST',
       body: JSON.stringify({ todoId, action }),
     })
