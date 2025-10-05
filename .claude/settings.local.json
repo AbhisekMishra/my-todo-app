@@ -8,7 +8,8 @@
       "Bash(npx eslint:*)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(npx tsc:*)",
-      "Bash(echo \"===NPM LINT EXIT CODE: $?\")"
+      "Bash(echo \"===NPM LINT EXIT CODE: $?\")",
+      "Bash(echo:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,6 +5,7 @@ import Calendar from 'react-calendar'
 import { Todo } from '@/types/database'
 import { format, startOfDay } from 'date-fns'
 import { Clock, AlertCircle } from 'lucide-react'
+import Image from 'next/image'
 import 'react-calendar/dist/Calendar.css'
 
 interface CalendarViewProps {
@@ -90,13 +91,15 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 h-[calc(100vh-12rem)]">
-      <h2 className="text-xl font-semibold mb-6">Calendar View</h2>
+    <div className="card p-4 sm:p-6 h-auto lg:h-[calc(100vh-12rem)]">
+      <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
+        Calendar View
+      </h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100%-3rem)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:h-[calc(100%-3rem)]">
         {/* Calendar */}
-        <div className="lg:col-span-2 flex flex-col h-full">
-          <div className="flex-1">
+        <div className="order-2 lg:order-1 lg:col-span-2 flex flex-col lg:h-full">
+          <div className="flex-1 min-h-[400px] lg:min-h-0">
             <Calendar
               onChange={(date) => setSelectedDate(date as Date)}
               value={selectedDate}
@@ -107,7 +110,7 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
           </div>
 
           {/* Legend */}
-          <div className="mt-4 flex flex-wrap gap-4 text-sm">
+          <div className="mt-4 flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm" style={{ color: 'var(--secondary-foreground)' }}>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <span>Critical</span>
@@ -117,22 +120,22 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
               <span>High Priority</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'var(--secondary-foreground)' }}></div>
               <span>Todo Count</span>
             </div>
           </div>
         </div>
 
         {/* Selected Date Todos */}
-        <div className="lg:col-span-1 flex flex-col h-full">
-          <h3 className="font-medium text-lg mb-4">
+        <div className="order-1 lg:order-2 lg:col-span-1 flex flex-col lg:h-full">
+          <h3 className="font-medium text-base sm:text-lg mb-3 sm:mb-4" style={{ color: 'var(--foreground)', fontFamily: 'Google Sans, sans-serif' }}>
             {format(selectedDate, 'MMMM d, yyyy')}
           </h3>
 
           {selectedDateTodos.length === 0 ? (
-            <p className="text-gray-500 text-sm">No todos for this date</p>
+            <p className="text-sm" style={{ color: 'var(--secondary-foreground)' }}>No todos for this date</p>
           ) : (
-            <div className="space-y-3 overflow-y-auto flex-1">
+            <div className="space-y-3 overflow-y-auto lg:flex-1 max-h-96 lg:max-h-none">
               {selectedDateTodos.map((todo) => (
                 <div
                   key={todo.id}
@@ -140,6 +143,15 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
                   className={`p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow ${getSeverityColor(todo.severity)} ${
                     todo.completed ? 'opacity-60' : ''
                   }`}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View todo: ${todo.title}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      onTodoClick?.(todo)
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <h4 className={`font-medium text-sm ${
@@ -175,12 +187,13 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
                   </div>
 
                   {todo.image_url && (
-                    <div className="mt-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                    <div className="mt-2 relative w-full h-16 rounded overflow-hidden">
+                      <Image
                         src={todo.image_url}
                         alt="Todo attachment"
-                        className="w-full h-16 object-cover rounded"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 384px"
                       />
                     </div>
                   )}
@@ -194,9 +207,10 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
       <style jsx global>{`
         .react-calendar {
           border: none !important;
-          font-family: inherit;
+          font-family: 'Google Sans', sans-serif;
           width: 100% !important;
           height: 100% !important;
+          background: transparent;
         }
 
         .react-calendar__viewContainer {
@@ -222,49 +236,78 @@ export function CalendarView({ todos, onTodoClick }: CalendarViewProps) {
 
         .react-calendar__tile {
           position: relative;
-          border: 1px solid #e5e7eb;
-          background: #ffffff;
+          border: 1px solid var(--border);
+          background: var(--card);
+          color: var(--foreground);
           transition: all 0.2s;
-          padding: 0.75rem;
+          padding: 0.5rem;
           height: 100%;
           max-height: none;
         }
 
+        @media (min-width: 640px) {
+          .react-calendar__tile {
+            padding: 0.75rem;
+          }
+        }
+
         .react-calendar__tile:hover {
-          background: #f3f4f6;
+          background: var(--accent);
         }
 
         .react-calendar__tile--active {
-          background: #3b82f6 !important;
-          color: white;
+          background: var(--primary) !important;
+          color: var(--primary-foreground) !important;
         }
 
         .react-calendar__tile.has-todos {
-          background: #fef3c7;
-          border-color: #f59e0b;
+          background: var(--accent);
+          border-color: var(--primary);
         }
 
         .react-calendar__tile.has-todos:hover {
-          background: #fde68a;
+          opacity: 0.8;
         }
 
         .react-calendar__navigation button {
           background: none;
           border: none;
-          font-size: 1rem;
+          font-size: 0.875rem;
           font-weight: 500;
-          color: #374151;
+          color: var(--foreground);
+          min-width: 44px;
+          min-height: 44px;
+        }
+
+        @media (min-width: 640px) {
+          .react-calendar__navigation button {
+            font-size: 1rem;
+          }
         }
 
         .react-calendar__navigation button:hover {
-          background: #f3f4f6;
+          background: var(--secondary);
+        }
+
+        .react-calendar__navigation button:disabled {
+          opacity: 0.5;
         }
 
         .react-calendar__month-view__weekdays {
           text-transform: uppercase;
           font-weight: 600;
-          font-size: 0.75rem;
-          color: #6b7280;
+          font-size: 0.65rem;
+          color: var(--secondary-foreground);
+        }
+
+        @media (min-width: 640px) {
+          .react-calendar__month-view__weekdays {
+            font-size: 0.75rem;
+          }
+        }
+
+        .react-calendar__month-view__weekdays__weekday {
+          padding: 0.5rem;
         }
       `}</style>
     </div>

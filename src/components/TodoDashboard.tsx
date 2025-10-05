@@ -6,7 +6,8 @@ import { TodoAPI } from '@/lib/api'
 import { Todo, TodoInsert } from '@/types/database'
 import { uploadImageToSupabase } from '@/lib/fileUpload'
 import { format } from 'date-fns'
-import { Calendar, Plus, LogOut, Clock, List, CalendarDays, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react'
+import { Calendar, Plus, LogOut, Clock, List, CalendarDays, CheckCircle, AlertTriangle, AlertCircle, Search } from 'lucide-react'
+import Image from 'next/image'
 import { WebNativeFeatures } from './WebNativeFeatures'
 import { ThemeToggle } from './ThemeToggle'
 import { CalendarView } from './CalendarView'
@@ -35,6 +36,7 @@ export function TodoDashboard() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchTodos = useCallback(async () => {
     try {
@@ -195,6 +197,16 @@ export function TodoDashboard() {
   const filteredAndSortedTodos = useMemo(() => {
     let filtered = todos
 
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(todo =>
+        todo.title.toLowerCase().includes(query) ||
+        (todo.description?.toLowerCase().includes(query) ?? false) ||
+        todo.category.toLowerCase().includes(query)
+      )
+    }
+
     // Apply severity filter
     if (severityFilter.length > 0) {
       filtered = filtered.filter(todo => severityFilter.includes(todo.severity))
@@ -221,7 +233,7 @@ export function TodoDashboard() {
     })
 
     return filtered
-  }, [todos, severityFilter, sortBy, sortOrder])
+  }, [todos, searchQuery, severityFilter, sortBy, sortOrder])
 
   const handleFilterChange = (severities: string[]) => {
     setSeverityFilter(severities)
@@ -259,6 +271,11 @@ export function TodoDashboard() {
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* Screen reader announcements */}
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {filteredAndSortedTodos.length} {filteredAndSortedTodos.length === 1 ? 'todo' : 'todos'} in list
+      </div>
 
       {/* Header */}
       <header className="border-b" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
@@ -349,12 +366,38 @@ export function TodoDashboard() {
           </div>
         </div>
 
-        {/* Severity Filter */}
+        {/* Search and Filters */}
         {viewMode === 'list' && (
-          <SeverityFilter
-            onFilterChange={handleFilterChange}
-            onSortChange={handleSortChange}
-          />
+          <div className="mb-6 space-y-4">
+            {/* Search Bar */}
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5" style={{ color: 'var(--secondary-foreground)' }} />
+              <input
+                type="search"
+                placeholder="Search todos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4"
+                aria-label="Search todos"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-sm"
+                  style={{ color: 'var(--secondary-foreground)' }}
+                  aria-label="Clear search"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* Severity Filter */}
+            <SeverityFilter
+              onFilterChange={handleFilterChange}
+              onSortChange={handleSortChange}
+            />
+          </div>
         )}
 
         {/* Add Todo Form */}
@@ -454,13 +497,15 @@ export function TodoDashboard() {
                     Attached Image
                   </label>
                   <div className="relative inline-block">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={newTodo.image_url}
-                      alt="Selected attachment"
-                      className="max-w-xs max-h-48 rounded-lg"
-                      style={{ border: '1px solid var(--border)' }}
-                    />
+                    <div className="relative w-80 h-48 rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                      <Image
+                        src={newTodo.image_url}
+                        alt="Selected attachment"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 320px"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setNewTodo(prev => ({ ...prev, image_url: undefined }))}
@@ -570,13 +615,15 @@ export function TodoDashboard() {
                       )}
                       {todo.image_url && (
                         <div className="ml-8 mb-2">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={todo.image_url}
-                            alt="Todo attachment"
-                            className="max-w-xs max-h-48 rounded-lg"
-                            style={{ border: '1px solid var(--border)' }}
-                          />
+                          <div className="relative w-80 h-48 rounded-lg overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                            <Image
+                              src={todo.image_url}
+                              alt="Todo attachment"
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, 320px"
+                            />
+                          </div>
                         </div>
                       )}
                       <div className="flex items-center gap-4 ml-8 flex-wrap">
